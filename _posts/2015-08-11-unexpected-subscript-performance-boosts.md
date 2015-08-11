@@ -1,6 +1,7 @@
 ---
 layout: post
 title: Unexpected Performance Boost Using Subscripts Over Explicit Casting
+comments: True
 ---
 
 I have a function that returns a specific nested dictionary. It looks like this:
