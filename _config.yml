@@ -7,14 +7,15 @@ permalink:        pretty
 relative_permalinks: true
 
 # Setup
-title:            Swift Bits
-tagline:          'Handy snippets as I transition from ObjC to Swift'
-description:      'As I make the transition to Swift, I'm noticing a lot of handy pieces of code or tidbits of knowledge. This site will be a store for all these 'remember me' bits.'
-url:              http://mfclarke.github.io
+title:            'Swift Bits'
+tagline:          'A Place for Handy Swift Snippets'
+description:      'Code snippets, styles and ideals on my journey from Obj-C to Swift.'
+url:              https://mfclarke.github.io
 baseurl:          /
 
 author:
   name:           'Maximilian Clarke'
+  url:            https://twitter.com/mfc83_
 
 paginate:         5
 
