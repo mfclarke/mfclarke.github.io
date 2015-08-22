@@ -6,128 +6,95 @@ comments: True
 
 As a follow up from my previous post, I thought I'd get a little more specific and scientific on the subscript performance boost. I am using a Swift Playground to investigate - feel free to play along at home.
 
-The scenario most relevant to this performance boost is using data loaded from a plist file in your app. So we start with a basic NSDictionary. Why an NSDictionary? Because loading a plist from the bundle requires you to use the NS classes in the Foundation framework. Unfortunately there's no native Swift Dictionary plist loader.
+The scenario investigated here is where you are accessing data loaded from a plist file in your app. When we load a plist, we unfortunately have to do it via an NSDictionary, and then bridge to the Swift Dictionary class and methods.
 
 ```swift
-var nsDict = NSMutableDictionary()
+let metadata1 = ["Director": "John McTiernan",
+                 "Tag Line": "40 Stories of Sheer Adventure!"]
+let metadata2 = ["Director": "Renny Harlin",
+                 "Tag Line": "Die Harder."]
+let metadata3 = ["Director": "John McTiernan",
+                 "Tag Line": "Fun with a vengeance!"]
+let metadata4 = ["Director": "Len Wiseman",
+                 "Tag Line": ""]
 
-let metadata1 = ["Director": "John McTiernan", "Tag Line": "40 Stories of Sheer Adventure!"]
-let metadata2 = ["Director": "Renny Harlin",   "Tag Line": "Die Harder."]
-let metadata3 = ["Director": "John McTiernan", "Tag Line": "Fun with a vengeance!"]
-let metadata4 = ["Director": "Len Wiseman",    "Tag Line": ""]
+let movies = ["Die Hard":   metadata1,
+              "Die Hard 2": metadata2,
+              "Die Hard 3": metadata3,
+              "Die Hard 4": metadata4]
 
-let movies = ["Die Hard": metadata1,
-    "Die Hard 2": metadata2,
-    "Die Hard 3": metadata3,
-    "Die Hard 4": metadata4]
-
-nsDict["Movies"] = movies
+let nsDict = NSDictionary(objects: [movies], forKeys: ["Movies"])
 ```
 
-What we're going to be testing here is getting the metadata for a movie out of this dictionary. Let's set up a functional function as a scaffold for our testing. We just inject whatever method of fetching we want to test into it.
+What we're going to be testing here is accessing information nested a couple of levels deep. Let's set up a benchmark function to run our execute our different methods and return the total time taken.
 
 ```swift
-typealias Metadata = String -> [String: String]?
+typealias NestedDict = () -> [String: String]?
 
-func getMetadataManyTimes(repeats: Int, getFunction: Metadata) {
+func benchmarkGetNestedDict(repeats: Int, getDict: NestedDict) -> NSTimeInterval {
+    let startDate = NSDate()
     for var x=0; x<repeats; x++ {
-        if let metadata = getFunction("Die Hard 2") {
-            metadata
-        }
+        getDict()
     }
+    return NSDate().timeIntervalSinceDate(startDate)
 }
 ```
 
-And some vars for later use.
+Now let's set everything up for the comparisons: some constants and variables for the benchmarks, and the if/let method of fetching as a baseline to compare against.
 
 ```swift
+let movieTitle = "Die Hard 2"
 let repeats = 5000
-var timeTaken: NSTimeInterval
+var comparison: NSTimeInterval
 var percentFaster: Double
-```
 
-First let's measure the if/let version of getting the metadata as a baseline.
-
-```swift
-//
-// NSDictionary using sequence of if/let
-//
-
-var startDate = NSDate()
-
-getMetadataManyTimes(repeats) { title in
+let baseline = benchmarkGetNestedDict(repeats) {
     if let movies = nsDict["Movies"] as? [String: AnyObject],
-        metadata = movies[title] as? [String: String] {
+        metadata = movies[movieTitle] as? [String: String] {
             return metadata
     }
     return nil
 }
-
-let baseline = NSDate().timeIntervalSinceDate(startDate)
 ```
 
-Now our first comparison, optimising by using chained subscripts.
+Our first comparison: chained optional subscripts.
 
 ```swift
-//
-// NSDictionary using chained subscripts
-//
-
-startDate = NSDate()
-
-getMetadataManyTimes(repeats) { title in
-    return nsDict["Movies"]?[title] as? [String: String]
+comparison = benchmarkGetNestedDict(repeats) {
+    return nsDict["Movies"]?[movieTitle] as? [String: String]
 }
-
-timeTaken = NSDate().timeIntervalSinceDate(startDate)
-percentFaster = ((baseline / timeTaken) - 1 ) * 100
+percentFaster = ((baseline / comparison) - 1 ) * 100   // ~22%
 ```
 
-```percentFaster``` is always >10% on my machine, usually around 20%. That's not bad! Not quite the 156ms down to 36ms from my previous post, but a function called sporadically during UIView loading has much more complexity and flow on effects around it.
+Not bad! Still not quite the 156ms down to 36ms from my previous post, but in that instance we were testing a full app and not the specific code in a tight loop, so there was much more complexity surrounding the function in question.
 
-Let's try using a strongly typed Swift version. No bridging, no casting.
+Ok, Let's try using a strongly typed Swift version. No bridging, no casting.
 
 ```swift
-//
-// Swift Dictionary using chained subscripts
-//
-
-var swiftDict = [String: [String: [String: String]]]()
-swiftDict["Movies"] = movies
-
-startDate = NSDate()
-
-getMetadataManyTimes(repeats) { title in
-    return swiftDict["Movies"]?[title]
+let swiftDict = ["Movies": movies]
+comparison = benchmarkGetNestedDict(repeats) {
+    return swiftDict["Movies"]?[movieTitle]
 }
-
-timeTaken = NSDate().timeIntervalSinceDate(startDate)
-percentFaster = ((baseline / timeTaken) - 1 ) * 100
+percentFaster = ((baseline / comparison) - 1 ) * 100   // ~23%
 ```
 
-```percentFaster``` is always very close to the NSDictionary chained subscripts method - sometimes slightly faster, sometimes slightly slower. So performance wise you could go either way. But for code cleanliness this is great.
+Not bad again. Slightly faster this way, but then the bridged NSDictionary is essentially just a Swift dictionary, so all we've really done here is taken off the optional cast to ```[String: String]```. Still, this gets a big tick from me - the cleaner the code the better.
 
-Just for kicks, let's try the NS valueForKeyPath:
+Now just for kicks, let's try using NSDictionary's valueForKeyPath:
 
 ```swift
-//
-// NSDictionary using valueForKeyPath
-//
-
-startDate = NSDate()
-
-getMetadataManyTimes(repeats) { title in
-    nsDict.valueForKeyPath("Movies" + title) as? [String: String]
+comparison = benchmarkGetNestedDict(repeats) {
+    nsDict.valueForKeyPath("Movies." + movieTitle) as? [String: String]
 }
-
-timeTaken = NSDate().timeIntervalSinceDate(startDate)
-percentFaster = ((baseline / timeTaken) - 1 ) * 100
+percentFaster = ((baseline / comparison) - 1 ) * 100   // ~16%
 ```
 
-```percentFaster``` hovers around 10%, but always slower than chained subscripts and straight Swift methods. Still, interesting to know that the NS valueForKeyPath is actually faster than doing a Swift if/let chain.
+Slower than optional subscripts and casting, but still faster than the if/let chain! This surprised me, I would have thought ```valueForKeyPath``` would have had more performance penalty being a legacy Foundation method.
 
 #### Concluding Thoughts
 
-If you have a plist file that you know the structure for, do yourself a favour and map it into a strongly typed Swift dictionary after loading from the bundle. Your code and your users will thank you for it. Otherwise, try and avoid the if/let chain and go for the optional subscript chain if you can.
+For fastest and cleanest code, get that NSDictionary into a strongly typed nested Swift Dictionary and access it with optional subscripts. In cases where you might not know the structure of your data so precisely, go for the optional subscripts and casting. In any case, avoid the if/let!
 
-Next post I will be investigating other scenarios where if/let can be substituted with other options, and measuring the performance benefit or cost in doing so. I have a hunch that if/let is a little taxing and should be avoided where possible. And no this is not a case for forced unwrapping!! Forced unwrapping is the anti-Swift.
+You may be wondering about 1 ommision from these benchmarks - force casting. I personally consider force casting the anti-Swift, and only use it where I absolutely have to (which is basically never), so I didn't feel the need to investigate.
+
+Next post I will be taking a look into other scenarios where if/let can be substituted for optional chains, and measuring the performance benefit or cost in doing so. I have a hunch that if/let is a little taxing and if there's a safe way of using optional chains then this is the more optimised route. We shall see....
