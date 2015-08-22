@@ -1,12 +1,12 @@
 ---
 layout: post
-title: The Performance Penalty of the if/let Chain
+title: The performance penalty of the if/let chain
 comments: True
 ---
 
 As a follow up from my previous post, I thought I'd get a little more specific and scientific on the subscript performance boost. I am using a Swift Playground to investigate - feel free to play along at home.
 
-The scenario investigated here is accessing data loaded from a plist file. When we load a plist, we unfortunately have to do it via an NSDictionary, and then bridge to the Swift Dictionary class and methods. So to replicate this in a Playground, lets build an NSDictionary of Die Hard movies and their respective directors and poster taglines. Yipikayay.
+The scenario investigated here is accessing data loaded from a plist file. When we load a plist we unfortunately have to do it via an NSDictionary and then bridge to the Swift Dictionary. So to replicate this in a Playground, lets build an NSDictionary of Die Hard movies and their respective directors and poster taglines. Yipee Kayee.
 
 ```swift
 let metadata1 = ["Director": "John McTiernan",
@@ -99,6 +99,6 @@ Slower than optional subscripts and casting, but still faster than the if/let ch
 
 For fastest and cleanest code, get that nested NSDictionary into a strongly typed nested Swift Dictionary and access it with optional subscripts. In cases where you might not know the structure of your data so precisely, access the NSDictionary with optional subscripts and casting. In any case, avoid the if/let!
 
-You may be wondering about 1 omission from these benchmarks - force casting. I personally consider force casting the anti-Swift, and only use it where I absolutely have to (which is basically never), so I didn't feel the need to investigate.
+You may be wondering about one omission from these benchmarks - force casting. I personally consider force casting the anti-Swift, and only use it where I absolutely have to (which is basically never), so I didn't feel the need to investigate.
 
 Next post I will be taking a look into other scenarios where if/let can be substituted for optional chains, and measuring the performance benefit or cost in doing so. I have a hunch that if/let is a little taxing and if there's a safe way of using optional chains then this is the more optimised route. We shall see....
