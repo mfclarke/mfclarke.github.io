@@ -24,66 +24,63 @@ let movies = ["Die Hard": metadata1,
 nsDict["Movies"] = movies
 ```
 
-Now here's our unoptimised function to return metadata for a movie in our dict. In a lot of ways it makes sense to write it this way: no forced unwrapping, basic type checking. And it's only a few lines anyway...
+What we're going to be testing here is getting the metadata for a movie out of this dictionary. Let's set up a functional function as a scaffold for our testing. We just inject whatever method of fetching we want to test into it.
 
 ```swift
-func movieMetadataNS1(title: String) -> [String: String]? {
-    if let movies = nsDict["Movies"] as? [String: AnyObject],
-        metadata = movies[title] as? [String: String] {
-            return metadata
+typealias Metadata = String -> [String: String]?
+
+func getMetadataManyTimes(repeats: Int, getFunction: Metadata) {
+    for var x=0; x<repeats; x++ {
+        if let metadata = getFunction("Die Hard 2") {
+            metadata
+        }
     }
-
-    return nil
 }
 ```
 
-As per my previous post, here's the optimised version:
+And some vars for later use.
 
 ```swift
-func movieMetadataNS2(title: String) -> [String: String]? {
-    return nsDict["Movies"]?[title] as? [String: String]
-}
+let repeats = 5000
+var timeTaken: NSTimeInterval
+var percentFaster: Double
 ```
 
-One thing to note here: Swift isn't so nice about having >2 optional subscripts in a row. I'm not sure why. The result of ```nsDict["Movies"]``` is ```AnyObject``` already, so for ```[title]``` to execute it's already making assumptions about the subscript return type (or ```?``` is doing some type checking of it's own). Any ideas please let me know in the comments!
-
-Right, let's do a quick comparison:
+First let's measure the if/let version of getting the metadata as a baseline.
 
 ```swift
 //
 // NSDictionary using sequence of if/let
 //
 
-let repeats = 5000
 var startDate = NSDate()
 
-for var x=0; x<repeats; x++ {
-    if let metadata = movieMetadataNS1("Die Hard 2"),
-        tagline = metadata["Tag Line"] {
-            println(tagline)
+getMetadataManyTimes(repeats) { title in
+    if let movies = nsDict["Movies"] as? [String: AnyObject],
+        metadata = movies[title] as? [String: String] {
+            return metadata
     }
+    return nil
 }
 
-let timeForMethod1 = NSDate().timeIntervalSinceDate(startDate)
+let baseline = NSDate().timeIntervalSinceDate(startDate)
+```
 
+Now our first comparison, optimising by using chained subscripts.
 
-
+```swift
 //
 // NSDictionary using chained subscripts
 //
 
 startDate = NSDate()
 
-for var x=0; x<repeats; x++ {
-    if let metadata = movieMetadataNS2("Die Hard 2"),
-        tagline = metadata["Tag Line"] {
-            println(tagline)
-    }
+getMetadataManyTimes(repeats) { title in
+    return nsDict["Movies"]?[title] as? [String: String]
 }
 
-let timeForMethod2 = NSDate().timeIntervalSinceDate(startDate)
-
-var percentFaster = ((timeForMethod1 / timeForMethod2) - 1 ) * 100
+timeTaken = NSDate().timeIntervalSinceDate(startDate)
+percentFaster = ((baseline / timeTaken) - 1 ) * 100
 ```
 
 ```percentFaster``` is always >10% on my machine, usually around 20%. That's not bad! Not quite the 156ms down to 36ms from my previous post, but a function called sporadically during UIView loading has much more complexity and flow on effects around it.
@@ -98,22 +95,14 @@ Let's try using a strongly typed Swift version. No bridging, no casting.
 var swiftDict = [String: [String: [String: String]]]()
 swiftDict["Movies"] = movies
 
-func movieMetadataSwift(title: String) -> [String: String]? {
+startDate = NSDate()
+
+getMetadataManyTimes(repeats) { title in
     return swiftDict["Movies"]?[title]
 }
 
-startDate = NSDate()
-
-for var x=0; x<repeats; x++ {
-    if let metadata = movieMetadataSwift("Die Hard 2"),
-        tagline = metadata["Tag Line"] {
-            println(tagline)
-    }
-}
-
-let timeForMethod3 = NSDate().timeIntervalSinceDate(startDate)
-
-percentFaster = ((timeForMethod1 / timeForMethod3) - 1 ) * 100
+timeTaken = NSDate().timeIntervalSinceDate(startDate)
+percentFaster = ((baseline / timeTaken) - 1 ) * 100
 ```
 
 ```percentFaster``` is always very close to the NSDictionary chained subscripts method - sometimes slightly faster, sometimes slightly slower. So performance wise you could go either way. But for code cleanliness this is great.
@@ -125,22 +114,14 @@ Just for kicks, let's try the NS valueForKeyPath:
 // NSDictionary using valueForKeyPath
 //
 
-func movieMetadataNS3(title: String) -> [String: String]? {
-    return nsDict.valueForKeyPath("Movies." + title) as? [String: String]
-}
-
 startDate = NSDate()
 
-for var x=0; x<repeats; x++ {
-    if let metadata = movieMetadataNS3("Die Hard 2"),
-        tagline = metadata["Tag Line"] {
-            println(tagline)
-    }
+getMetadataManyTimes(repeats) { title in
+    nsDict.valueForKeyPath("Movies" + title) as? [String: String]
 }
 
-let timeForMethod4 = NSDate().timeIntervalSinceDate(startDate)
-
-percentFaster = ((timeForMethod1 / timeForMethod4) - 1 ) * 100
+timeTaken = NSDate().timeIntervalSinceDate(startDate)
+percentFaster = ((baseline / timeTaken) - 1 ) * 100
 ```
 
 ```percentFaster``` hovers around 10%, but always slower than chained subscripts and straight Swift methods. Still, interesting to know that the NS valueForKeyPath is actually faster than doing a Swift if/let chain.
