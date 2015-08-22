@@ -6,7 +6,7 @@ comments: True
 
 As a follow up from my previous post, I thought I'd get a little more specific and scientific on the subscript performance boost. I am using a Swift Playground to investigate - feel free to play along at home.
 
-The scenario investigated here is where you are accessing data loaded from a plist file in your app. When we load a plist, we unfortunately have to do it via an NSDictionary, and then bridge to the Swift Dictionary class and methods.
+The scenario investigated here is accessing data loaded from a plist file. When we load a plist, we unfortunately have to do it via an NSDictionary, and then bridge to the Swift Dictionary class and methods. So to replicate this in a Playground, lets build an NSDictionary of Die Hard movies and their respective directors and poster taglines. Yipikayay.
 
 ```swift
 let metadata1 = ["Director": "John McTiernan",
@@ -26,7 +26,7 @@ let movies = ["Die Hard":   metadata1,
 let nsDict = NSDictionary(objects: [movies], forKeys: ["Movies"])
 ```
 
-What we're going to be testing here is accessing information nested a couple of levels deep. Let's set up a benchmark function to run our execute our different methods and return the total time taken.
+Let's set up a benchmark function to execute our different methods and return the total time taken.
 
 ```swift
 typealias NestedDict = () -> [String: String]?
@@ -57,23 +57,26 @@ let baseline = benchmarkGetNestedDict(repeats) {
 }
 ```
 
-Our first comparison: chained optional subscripts.
+Our first comparison: chained optional subscripts with an optional cast.
 
 ```swift
 comparison = benchmarkGetNestedDict(repeats) {
-    return nsDict["Movies"]?[movieTitle] as? [String: String]
+    let metadata = nsDict["Movies"]?[movieTitle] as? [String: String]
+    return metadata
 }
 percentFaster = ((baseline / comparison) - 1 ) * 100   // ~22%
 ```
 
-Not bad! Still not quite the 156ms down to 36ms from my previous post, but in that instance we were testing a full app and not the specific code in a tight loop, so there was much more complexity surrounding the function in question.
+22%, not bad! Still not quite the 156ms down to 36ms from my previous post, but in that instance we were testing a full app and not the specific code in a tight loop, so there was much more complexity surrounding the function in question.
 
-Ok, Let's try using a strongly typed Swift version. No bridging, no casting.
+Ok, let's try using a strongly typed Swift version. No bridging, no casting.
 
 ```swift
 let swiftDict = ["Movies": movies]
+swiftDict.dynamicType   // [String: [String: [String: String]]]
 comparison = benchmarkGetNestedDict(repeats) {
-    return swiftDict["Movies"]?[movieTitle]
+    let metadata = swiftDict["Movies"]?[movieTitle]
+    return metadata
 }
 percentFaster = ((baseline / comparison) - 1 ) * 100   // ~23%
 ```
@@ -84,7 +87,8 @@ Now just for kicks, let's try using NSDictionary's valueForKeyPath:
 
 ```swift
 comparison = benchmarkGetNestedDict(repeats) {
-    nsDict.valueForKeyPath("Movies." + movieTitle) as? [String: String]
+    let metadata = nsDict.valueForKeyPath("Movies." + movieTitle) as? [String: String]
+    return metadata
 }
 percentFaster = ((baseline / comparison) - 1 ) * 100   // ~16%
 ```
@@ -93,8 +97,8 @@ Slower than optional subscripts and casting, but still faster than the if/let ch
 
 #### Concluding Thoughts
 
-For fastest and cleanest code, get that NSDictionary into a strongly typed nested Swift Dictionary and access it with optional subscripts. In cases where you might not know the structure of your data so precisely, go for the optional subscripts and casting. In any case, avoid the if/let!
+For fastest and cleanest code, get that nested NSDictionary into a strongly typed nested Swift Dictionary and access it with optional subscripts. In cases where you might not know the structure of your data so precisely, access the NSDictionary with optional subscripts and casting. In any case, avoid the if/let!
 
-You may be wondering about 1 ommision from these benchmarks - force casting. I personally consider force casting the anti-Swift, and only use it where I absolutely have to (which is basically never), so I didn't feel the need to investigate.
+You may be wondering about 1 omission from these benchmarks - force casting. I personally consider force casting the anti-Swift, and only use it where I absolutely have to (which is basically never), so I didn't feel the need to investigate.
 
 Next post I will be taking a look into other scenarios where if/let can be substituted for optional chains, and measuring the performance benefit or cost in doing so. I have a hunch that if/let is a little taxing and if there's a safe way of using optional chains then this is the more optimised route. We shall see....
