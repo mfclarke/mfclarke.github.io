@@ -6,7 +6,7 @@ comments: True
 
 Since my last post I've been investigating different ways of accessing data in an NSDictionary in Swift and measuring the performance.
 
-In that post, I thought that using an if/let chain that casts each nested dictionary individually caused a significant performance hit, and using an optional chain to access a nest value is much faster. That's not entirely correct: yes using an optional chain is much faster, but not for the reasons I thought. It turns out that it's what was being done inside the if/let chain, and the misuse of bridged classes, that was the culprit. Let me explain.
+In that post, I thought that using an if/let chain that casts each nested dictionary individually caused a significant performance hit, and using an optional chain to access a nested value is much faster. That's not entirely correct: yes using an optional chain is much faster, but not for the reasons I thought. It turns out that it's what was being done inside the if/let chain, and the misuse of bridged classes, that was the culprit. Let me explain.
 
 First of all, I wasn't building the test nested NSDictionary correctly. What I should have done was built a nested NSDictionary out of only NSDictionaries, like what happens when you load a plist. Instead I mistakenly created an NSDictionary of Swift Dictionaries. I thought that since NSDictionary bridges to Dictionary, they're basically the same thing under the hood, just accessed different ways.... Well, they're not.
 
