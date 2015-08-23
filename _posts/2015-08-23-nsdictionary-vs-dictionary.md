@@ -6,11 +6,11 @@ comments: True
 
 Since my last post I've been investigating different ways of accessing data in an NSDictionary in Swift and measuring the performance.
 
-It turns out that it's not necessarily the if/let chain that causes a performance hit, but what was being done inside that if/let chain. Let me explain.
+In that post, I thought that using an if/let chain that casts each nested dictionary individually caused a significant performance hit, and using an optional chain to access a nest value is much faster. That's not entirely correct: yes using an optional chain is much faster, but not for the reasons I thought. It turns out that it's what was being done inside the if/let chain, and the misuse of bridged classes, that was the culprit. Let me explain.
 
-There was a flaw in the previous post. The results aren't entirely invalid, but I wasn't testing the scenario completely correctly. What I should have done was built a nested NSDictionary out of only NSDictionaries. Instead I mistakenly created an NSDictionary of Swift Dictionaries. I thought that since NSDictionary bridges to Dictionary, they're basically the same thing under the hood, just accessed different ways.... Well, they're not.
+First of all, I wasn't building the test nested NSDictionary correctly. What I should have done was built a nested NSDictionary out of only NSDictionaries, like what happens when you load a plist. Instead I mistakenly created an NSDictionary of Swift Dictionaries. I thought that since NSDictionary bridges to Dictionary, they're basically the same thing under the hood, just accessed different ways.... Well, they're not.
 
-If we create a pure nested NSDictionary, like if we loaded a plist, we can access nested values like this:
+If we create a pure nested NSDictionary, we can access nested values like this:
 
 ```swift
 if let movies = nsDict["Movies"] as? NSDictionary,
@@ -30,7 +30,7 @@ if let movies = nsDict["Movies"] as? [String: AnyObject],
 }
 ```
 
-And also way faster than the equivalent with a pure strongly typed, nested Swift Dictionaries.
+And also way faster than the equivalent with a pure strongly typed, nested Swift Dictionary.
 
 ```swift
 if let movies = swDict["Movies"],
@@ -42,7 +42,7 @@ if let movies = swDict["Movies"],
 
 Like, at least 2 times faster in both cases. Doh.
 
-In the first case, there's a performance hit every time you convert between bridged classes. You can't just bridge back and forth from NSDictionary to Swift Dictionary. And bridging to the Swift class doesn't mean it just automatically gets faster because it's now a Swift class. Which leads me to the second case: Swift's Dictionary just isn't that fast compared to NSDictionary. "Blasphemy!" you cry. It's unfortunately true. Try it for yourself, it's way slower. I also benchmarked non-nested fetches (just a single valueForKey) and even there NSDictionary is much faster.
+In the first case, there's a performance hit every time you convert between bridged classes. You can't just bridge back and forth from NSDictionary to Swift Dictionary. And bridging to the Swift class doesn't mean it just automatically gets faster because it's now a Swift class. Which leads me to what makes the second case also not performant: Swift's Dictionary just isn't that fast compared to NSDictionary. "Blasphemy!" you cry. It's unfortunately true. Try it for yourself, it's way slower. I also benchmarked non-nested fetches (just fetching a value from a single dictionary) and even there NSDictionary is much faster.
 
 Bridges aren't what you think they are. They're quite different behind the scenes and if you have a function called a lot that uses Dictionaries, you'll unfortunately be better off with the legacy option for now.
 
