@@ -4,6 +4,8 @@ title: The performance penalty of the if/let chain
 comments: True
 ---
 
+*The findings of this post are slightly inaccurate. It's not the if/let, but what is going on inside the if/let as well as the objects used that's causing the performance hit. Please see [this post](http://mfclarke.github.io/2015/08/23/nsdictionary-vs-dictionary/) for a more accurate explanation of what's going on.*
+
 As a follow up from my previous post, I thought I'd get a little more specific and scientific on the subscript performance boost. I am using a Swift Playground to investigate - feel free to play along at home.
 
 The scenario investigated here is accessing data loaded from a plist file. When we load a plist we unfortunately have to do it via an NSDictionary and then bridge to the Swift Dictionary. So to replicate this in a Playground, lets build an NSDictionary of Die Hard movies and their respective directors and poster taglines. Yipee Kayee.
@@ -45,8 +47,8 @@ Now let's set everything up for the comparisons: some constants and variables fo
 ```swift
 let movieTitle = "Die Hard 2"
 let repeats = 5000
-var comparison: NSTimeInterval
-var percentFaster: Double
+var comparison: NSTimeInterval = 0
+var timesFaster: Double = 0
 
 let baseline = benchmarkGetNestedDict(repeats) {
     if let movies = nsDict["Movies"] as? [String: AnyObject],
@@ -64,10 +66,10 @@ comparison = benchmarkGetNestedDict(repeats) {
     let metadata = nsDict["Movies"]?[movieTitle] as? [String: String]
     return metadata
 }
-percentFaster = ((baseline / comparison) - 1 ) * 100   // ~22%
+timesFaster = baseline / comparison   // ~1.22
 ```
 
-22%, not bad! Still not quite the 156ms down to 36ms from my previous post, but in that instance we were testing a full app and not the specific code in a tight loop, so there was much more complexity surrounding the function in question.
+1.22 times faster, not bad! Still not quite the 156ms down to 36ms from my previous post, but in that instance we were testing a full app and not the specific code in a tight loop, so there was much more complexity surrounding the function in question.
 
 Ok, let's try using a strongly typed Swift version. No bridging, no casting.
 
@@ -78,7 +80,7 @@ comparison = benchmarkGetNestedDict(repeats) {
     let metadata = swiftDict["Movies"]?[movieTitle]
     return metadata
 }
-percentFaster = ((baseline / comparison) - 1 ) * 100   // ~23%
+timesFaster = baseline / comparison   // ~1.23
 ```
 
 Not bad again. Slightly faster this way, but then the bridged NSDictionary is essentially just a Swift dictionary, so all we've really done here is taken off the optional cast to ```[String: String]```. Still, this gets a big tick from me - the cleaner the code the better.
@@ -90,7 +92,7 @@ comparison = benchmarkGetNestedDict(repeats) {
     let metadata = nsDict.valueForKeyPath("Movies." + movieTitle) as? [String: String]
     return metadata
 }
-percentFaster = ((baseline / comparison) - 1 ) * 100   // ~16%
+timesFaster = baseline / comparison   // ~1.16
 ```
 
 Slower than optional subscripts and casting, but still faster than the if/let chain! This surprised me, I would have thought ```valueForKeyPath``` would have had more performance penalty being a legacy Foundation method.
