@@ -4,15 +4,15 @@ title: Introduction to Reactive Cocoa 4 (pt 1)
 comments: True
 ---
 
-### AKA The ELI5 idiots guide to [Reactive Cocoa 4](https://github.com/reactivecocoa/reactivecocoa) for dummies who are [fluent in Swift 2](https://www.objc.io/books/advanced-swift/) but know nothing about any version of Reactive Cocoa (though maybe know a little bit of [what FRP is all about](https://gist.github.com/staltz/868e7e9bc2a7b8c1f754))
+Reactive Cocoa 4 is pretty new and there are some big syntax changes since previous versions. Unfortunately this means all the information online at the moment is more concerned with those changes rather than showing you how to use it from scratch. If you're new to the whole thing, that steep FRP learning curve is even more steep than normal. Until now. Hold on to your flatMaps, I give you:
 
-Reactive Cocoa 4 is pretty new and there are some big syntax changes since previous versions. Unfortunately this means all the information online at the moment is more concerned with those changes rather than showing you how to use it from scratch. If you're new to the whole thing, that steep FRP learning curve is even more steep than normal. Until now. Hold on to your flatMaps, here comes part 1.
+### The ELI5 idiots guide to [Reactive Cocoa 4](https://github.com/reactivecocoa/reactivecocoa) for dummies who are [fluent in Swift 2](https://www.objc.io/books/advanced-swift/) but know nothing about any version of Reactive Cocoa (though maybe know a little bit of [what FRP is all about](https://gist.github.com/staltz/868e7e9bc2a7b8c1f754))
 
-## Signals, Events, Values, say what?
 Before you start, get a clone of the Reactive Cocoa Github repo up and running in Xcode, [set up a playground that imports the ReactiveCocoa and Result frameworks](https://github.com/ReactiveCocoa/ReactiveCocoa/pull/2795) (checkout that PR if you're lazy like me) and grab a fresh cup of ☕️
 
 Right, you good? Ok let's go.
 
+## Signals, Events, Values, say what?
 Say you want to send an ```Int``` somewhere. In ReactiveCocoa 4 speak, that ```Int``` is a value, that is sent on a ```Signal```. A ```Signal``` can be used to send any number of values over time, so it's best to think about it as a continuous stream that values flow down. For an object to receive these values, it needs to *observe* the ```Signal```.
 
 Makes sense. So let's send our ```Int```. To do this, we create a ```Signal``` and it's corresponding ```Observer```, and we send the ```Int``` using the ```Observer``` object. This can be slightly confusing at first, but it's very simple: the ```Observer``` object isn't the object observing the ```Signal``` - it **represents** objects that are observing the ```Signal```. So when we send a value using our ```Observer``` object, we're really sending a value down the ```Signal``` to everything observing the ```Signal```.
@@ -32,7 +32,7 @@ So the cool thing about ```Signal```s is that they can be observed by any number
 
 > ![Example 2](/images/rac4/example2.jpg)
 
-### Event Types
+## Event Types
 As mentioned before, values sent down a ```Signal``` are actually wrapped in a *Next* ```Event```. There are other ```Event``` types too.
 
 First, there's the *Failed* ```Event```. The *Failed* ```Event``` carries an ```ErrorType``` and when sent causes the ```Signal``` to stop. So if we encounter a situation where we want the ```Signal``` to stop, and to inform anything observing the ```Signal``` what went wrong, we can simply ```sendFailed``` with an ```ErrorType```:
@@ -61,7 +61,7 @@ How many times have you updated a value in a model object, and then needed to re
 
 That's pretty neat. Really neat. We have all the logic in one place (observation setup, and what happens when values change), simply by providing a ```Signal``` that the ```UILabel```s can observe for changes. No coupling, endless observations, everything in sync. But it requires a bit of boilerplate (an ```Observer``` and ```Signal``` for each of my model's var's). Imagine what happens when we have a bunch of models all with different vars. Well, guess what? This is such a common usage of Reactive Cocoa that they've thought of this too. Welcome to
 
-### Mutable Properties
+## Mutable Properties
 
 These take the pattern above and wrap it up into a neat little package. No more boilerplate. Let's see the same thing, but using a ```MutableProperty``` var:
 
@@ -69,7 +69,7 @@ These take the pattern above and wrap it up into a neat little package. No more 
 
 Well that's super neat. Really super neat. By wrapping our vars as ```MutableProperty```s, each of them have their own little ```Signal```s that fire whenever the value changes. But we're not done yet - our ```observeNext```'s all follow the same pattern: update a var when new values arrive. Guess who thought of this common scenario again? Welcome to
 
-### Bindings
+## Bindings
 
 A ```Binding``` allows you to say, in one fell swoop of the ```<~``` operator, "whenever this var updates, make sure this one updates to it's value". Check it out:
 
