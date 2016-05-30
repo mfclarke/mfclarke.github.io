@@ -46,6 +46,8 @@ Say hello to *operator*s.
 
 Here we're using the ```filter``` *operator*. Generally speaking, this *operator* receives *Next* ```Event```s from the ```Signal``` it's attached to, and filters their ```Value```s using the predicate closure given. So in our case, take the ```String```s that come in from the ```stringSignal``` and filter them by "contains 'dog'". Notice how this logic moves out of our ```observeNext```.
 
+### ⛓Chains ⛓
+
 This isn't the whole picture though. *Operator*s actually return brand new ```Signal```s that fire *Next* ```Event```s using their transform. So in the case of ```filter```, it fires when the predicate returns ```true```.
 
 This is truly awesome for a few reasons, but first of all it means we can observe this new ```Signal``` to be notified when the string contains a dog, but not touch the behaviour of the ```Signal``` we're ```filter```ing. ```Signal```s are immutable, and if we don't introduce any side effects then they **always** do the same thing. Hey look, your code just got way easier to read and understand!
@@ -70,6 +72,8 @@ What if we don't really want to get notified per se, but just want to replace th
 
 Pretty simple - we use the ```map``` *operator* which has the exact same "return a ```Signal``` that fires transformed ```Event```s" characteristic. So, our ```map``` creates a new ```Signal``` that fires *Next* ```Event```s with the word "dog" replaced with 🐶. We also just inserted it into our chain, no bother.
 
+### Error, Error, 123
+
 What happens if a ```Signal``` sends a *Failed* ```Event```?
 
 > ![Example 6](/images/rac4-2/example6.jpg)
@@ -84,6 +88,6 @@ That was kind of a contrived example though - we should automatically fail rathe
 
 We can use the ```attempt``` *operator* to check for the error case and throw if it's met. Even though ```Success``` doesn't pass any value, it indicates that all is well and ```Event```s can continue down the chain untouched. Then it's just business as usual.
 
-Notice how all the logic for transforming our ```String```s is all in the same place, including error handling? And it's totally decoupled from anything that needs to react to the transformed ```String```s or errors. Can I get a hell yeah?  
+Notice how all the logic for transforming our ```String```s is all in the same place, including error handling? And it's totally decoupled from anything that needs to react to the transformed ```String```s or errors. Can I get a hell yeah?
 
-In the next installment we introduce the final piece of the puzzle: ```SignalProducer```s. Until then! 👋
+In the next installment we take things next level: ```SignalProducer```s. Until then! 👋
