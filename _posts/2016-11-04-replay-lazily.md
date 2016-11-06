@@ -12,17 +12,17 @@ Or.... prefetching! On app start you can call `start` on these guys and let them
 
 ```
 class DataProvider {
-    var producer = DataFetcher.fetch().replayLazily(upTo: 1)
+    static var producer = DataFetcher.fetch().replayLazily(upTo: 1)
 }
 
 // Prefetch as early as possible
-dataProvider.producer.start()
+DataProvider.producer.start()
 
 // Use it normally when you need it
-myClassThatNeedsData.dataProperty <~ dataProvider.producer
+myClassThatNeedsData.dataProperty <~ DataProvider.producer
 
 // Or if your app isn't fully reactive
-dataProvider.producer.startWithValues { values in
+DataProvider.producer.startWithValues { values in
     // do something cool with said values
 }
 ```
