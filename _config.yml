@@ -10,7 +10,7 @@ title:            'Swift Bits'
 tagline:          'All things Swift'
 description:      "<a href='https://twitter.com/mfc83_' target='_blank'>@mfc83_</a>'s Swift stuff. I also run <a href='http://trainspottr.fm' target='_blank'>trainspottr.fm</a>"
 url:              https://mfclarke.github.io
-baseurl:          /
+baseurl:          ""
 
 author:
   name:           'Maximilian Clarke'
