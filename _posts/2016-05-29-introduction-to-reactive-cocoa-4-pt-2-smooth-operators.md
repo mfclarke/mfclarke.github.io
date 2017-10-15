@@ -4,6 +4,9 @@ title: Introduction to Reactive Cocoa 4 (pt 2) - Smooth Operators
 comments: True
 ---
 
+Note: This is really outdated. Please see my newer posts on the topic!
+
+
 Before we begin pt 2 of the **ELI5 idiots guide to [Reactive Cocoa 4](https://github.com/reactivecocoa/reactivecocoa) for dummies who are [fluent in Swift 2](https://www.objc.io/books/advanced-swift/) but know nothing about any version of Reactive Cocoa (though maybe know a little bit of [what FRP is all about](https://gist.github.com/staltz/868e7e9bc2a7b8c1f754))** (or TEIGRC4FDWAFS2BKNAAVRC for short), I'd like you to press play on the following video:
 
 <a class="embedly-card" href="http://www.vevo.com/watch/sade/smooth-operator-(official-video)/GB1100800414">Smooth Operator (Official Video) - Sade</a>

@@ -4,6 +4,9 @@ title: Introduction to Reactive Cocoa 4 (pt 1)
 comments: True
 ---
 
+Note: This is really outdated. Please see my newer posts on the topic!
+
+
 Reactive Cocoa 4 is pretty new and there are some big syntax changes since previous versions. Unfortunately this means all the information online at the moment is more concerned with those changes rather than showing you how to use it from scratch. If you're new to the whole thing, that steep FRP learning curve is even more steep than normal. Until now. Hold on to your flatMaps, I give you:
 
 ### The ELI5 idiots guide to [Reactive Cocoa 4](https://github.com/reactivecocoa/reactivecocoa) for dummies who are [fluent in Swift 2](https://www.objc.io/books/advanced-swift/) but know nothing about any version of Reactive Cocoa (though maybe know a little bit of [what FRP is all about](https://gist.github.com/staltz/868e7e9bc2a7b8c1f754))
